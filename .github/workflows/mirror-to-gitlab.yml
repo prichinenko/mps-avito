@@ -1,0 +1,23 @@
+name: Mirror gpt to GitLab
+on:
+  push:
+    branches: ['gpt']
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gpt
+          fetch-depth: 0
+      - name: Push to GitLab
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          if [ -z "$GITLAB_TOKEN" ]; then
+            echo "GitLab mirror skipped because GITLAB_TOKEN is not configured."
+            exit 0
+          fi
+          git remote add gitlab https://artem:${GITLAB_TOKEN}@repo2.4www.space/webasyst/mps/plugins/avito.git
+          git push gitlab gpt:gpt
