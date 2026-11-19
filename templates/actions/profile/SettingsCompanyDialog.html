@@ -1,0 +1,28 @@
+<div class="dialog">
+    <div class="dialog-background"></div>
+    <div class="dialog-body">
+        <header class="dialog-header"><h2>{_wd('mps_avito', 'Avito account')|escape}</h2></header>
+        <div class="dialog-content">
+            <form action="?action=settingsCompanyDialogSave" method="post">
+                {$wa->csrf()}
+                <input type="hidden" name="settings[profile_uuid]" value="{$profile_uuid|escape}">
+                <input type="hidden" name="company_uuid" value="{$company_uuid|escape}">
+                <input type="hidden" name="type" value="edit">
+                <div class="fields">
+                    <div class="field">
+                        <label class="name" for="avito-account-name">{_wd('mps','Name')|escape}</label>
+                        <div class="value"><input id="avito-account-name" name="settings[name]" required value="{$settings.name|default:''|escape}"></div>
+                    </div>
+                    <div class="field">
+                        <label class="name" for="avito-account-id">{_wd('mps_avito','Avito account ID')|escape}</label>
+                        <div class="value"><input id="avito-account-id" name="settings[marketplace_company]" inputmode="numeric" pattern="[1-9][0-9]{0,31}" required value="{$settings.marketplace_company|default:''|escape}"></div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <footer class="dialog-footer">
+            <button class="button js-submit-form" type="button">{_wd('mps','Save')|escape}</button>
+            <button class="button light-gray js-close-dialog" type="button">{_wd('mps','Cancel')|escape}</button>
+        </footer>
+    </div>
+</div>

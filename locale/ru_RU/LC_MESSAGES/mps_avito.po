@@ -1,0 +1,44 @@
+msgid ""
+msgstr "Language: ru_RU\nContent-Type: text/plain; charset=UTF-8\n"
+
+msgid "Enter the Avito account ID in the company settings."
+msgstr "Укажите ID аккаунта Авито в настройках компании."
+
+msgid "Enter the Avito Client ID and Client Secret in the site settings."
+msgstr "Укажите Client ID и Client Secret Авито в настройках сайта."
+
+msgid "The Avito account ID does not match these credentials."
+msgstr "Реквизиты API принадлежат другому аккаунту Авито. Проверьте ID аккаунта в настройках компании."
+
+msgid "Could not connect to the Avito API."
+msgstr "Не удалось подключиться к API Авито."
+
+msgid "Avito rejected the credentials or denied API access."
+msgstr "Авито отклонил реквизиты или отказал в доступе к API."
+
+msgid "Avito API request failed (HTTP %d)."
+msgstr "Ошибка запроса к API Авито (HTTP %d)."
+
+msgid "Invalid Avito API response."
+msgstr "Некорректный ответ API Авито."
+
+msgid "Could not load the Avito category catalog."
+msgstr "Не удалось загрузить справочник категорий Авито."
+
+msgid "Credentials are configured. To update them, enter both values."
+msgstr "Реквизиты сохранены. Для замены укажите оба значения."
+
+msgid "Use the API credentials of the account that owns the listings."
+msgstr "Используйте реквизиты API аккаунта, которому принадлежат объявления."
+
+msgid "Avito accounts"
+msgstr "Аккаунты Авито"
+
+msgid "Avito account"
+msgstr "Аккаунт Авито"
+
+msgid "Add account"
+msgstr "Добавить аккаунт"
+
+msgid "Avito account ID"
+msgstr "ID аккаунта Авито"

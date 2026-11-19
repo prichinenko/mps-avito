@@ -1,0 +1,44 @@
+msgid ""
+msgstr "Language: en_US\nContent-Type: text/plain; charset=UTF-8\n"
+
+msgid "Enter the Avito account ID in the company settings."
+msgstr "Enter the Avito account ID in the company settings."
+
+msgid "Enter the Avito Client ID and Client Secret in the site settings."
+msgstr "Enter the Avito Client ID and Client Secret in the site settings."
+
+msgid "The Avito account ID does not match these credentials."
+msgstr "The Avito account ID does not match these credentials."
+
+msgid "Could not connect to the Avito API."
+msgstr "Could not connect to the Avito API."
+
+msgid "Avito rejected the credentials or denied API access."
+msgstr "Avito rejected the credentials or denied API access."
+
+msgid "Avito API request failed (HTTP %d)."
+msgstr "Avito API request failed (HTTP %d)."
+
+msgid "Invalid Avito API response."
+msgstr "Invalid Avito API response."
+
+msgid "Could not load the Avito category catalog."
+msgstr "Could not load the Avito category catalog."
+
+msgid "Credentials are configured. To update them, enter both values."
+msgstr "Credentials are configured. To update them, enter both values."
+
+msgid "Use the API credentials of the account that owns the listings."
+msgstr "Use the API credentials of the account that owns the listings."
+
+msgid "Avito accounts"
+msgstr "Avito accounts"
+
+msgid "Avito account"
+msgstr "Avito account"
+
+msgid "Add account"
+msgstr "Add account"
+
+msgid "Avito account ID"
+msgstr "Avito account ID"

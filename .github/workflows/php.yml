@@ -1,0 +1,23 @@
+name: PHP
+on: [push, pull_request]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, mbstring, simplexml
+          coverage: none
+      - run: |
+          find lib tests -name '*.php' -print0 | xargs -0 -n1 php -d error_reporting=32767 -l
+          php tests/behavior.php
+          python3 tools/build.py check HEAD
+          python3 tools/compile-locales.py --check
+          python3 tools/package.py

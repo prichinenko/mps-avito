@@ -1,0 +1,45 @@
+<form id="mp-settings-form" action="?action=settingsSave" method="post">
+    {$wa->csrf()}
+    <input type="hidden" name="profile_uuid" value="{$profile.uuid|escape}">
+    <div class="fields">
+        <div class="field">
+            <div class="name"><label for="mps-avito-client-id">Client ID</label></div>
+            <div class="value"><input id="mps-avito-client-id" name="token_default" required autocomplete="off" value="{$profile.token_default|default:''|escape}"></div>
+        </div>
+        <div class="field">
+            <div class="name"><label for="mps-avito-client-secret">Client Secret</label></div>
+            <div class="value">
+                <input id="mps-avito-client-secret" name="token" type="password" required autocomplete="new-password">
+                {if !empty($profile.token)}<p class="hint">{_wd('mps_avito', 'Credentials are configured. To update them, enter both values.')|escape}</p>{/if}
+                <p class="hint">{_wd('mps_avito', 'Use the API credentials of the account that owns the listings.')|escape}</p>
+            </div>
+        </div>
+        <div class="field"><div class="value"><button type="submit" class="button">{_wd('mps', 'Save')|escape}</button></div></div>
+    </div>
+</form>
+<div class="box custom-mt-16 js-avito-accounts">
+    <h3>{_wd('mps_avito', 'Avito accounts')|escape}</h3>
+    <button type="button" class="button light-gray js-avito-account">{_wd('mps_avito', 'Add account')|escape}</button>
+    <ul class="menu">
+        {foreach $profile.companies|default:[] as $company}
+            <li>
+                <button type="button" class="button nobutton js-avito-account" data-uuid="{$company.uuid|escape}">
+                    {$company.name|escape} ({$company.marketplace_company|escape})
+                </button>
+            </li>
+        {/foreach}
+    </ul>
+</div>
+<script>
+    $('.js-avito-accounts .js-avito-account').on('click', function () {
+        const id = this.dataset.uuid;
+        $.post('?action=settingsCompanyDialog', {
+            profile_uuid: '{$profile.uuid|escape}',
+            company_uuid: id || 'new',
+            type: id ? 'edit' : 'new',
+            _csrf: $('input[name="_csrf"]').first().val()
+        }, function (html) {
+            $.waDialog({ html: html });
+        });
+    });
+</script>
