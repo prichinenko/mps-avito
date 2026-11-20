@@ -13,3 +13,5 @@
 Для сборки выполните `python3 tools/package.py` из репозитория после коммита. Архив разворачивает файлы в `wa-apps/mps/plugins/avito/`.
 
 [Техническое задание](docs/spec.md) · [Каталог API Авито](https://www.avito.ru/developers/api-catalog)
+
+[Промокарточка плагина](img/promo/mps-promo.png)
