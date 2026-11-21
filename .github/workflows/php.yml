@@ -22,3 +22,9 @@ jobs:
           python3 tools/compile-locales.py --check
           python3 -m unittest discover -s tests -p 'test_store_package.py'
           python3 tools/package.py
+          python3 tools/package.py --store
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webasyst-store-${{ matrix.php }}-${{ github.sha }}
+          path: dist/store/
+          if-no-files-found: error
