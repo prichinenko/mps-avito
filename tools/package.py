@@ -69,7 +69,40 @@ def metadata(app, build):
     return values['version'], number
 
 
-def package(repo, output_dir):
+def store_metadata(config, version, build, vendor=None):
+    if not re.fullmatch(r'[0-9]+\.[0-9]+', version):
+        raise ValueError('Store packaging expects a major.minor source version and a separate build')
+    text = config.decode('utf-8')
+    version_field = re.compile(r"""(['"]version['"]\s*=>\s*)(['"])[^'"]+\2""")
+    vendor_key = re.compile(r"""['"]vendor['"]\s*=>""")
+    vendor_field = re.compile(r"""(['"]vendor['"]\s*=>\s*)(?:'([1-9][0-9]*)'|"([1-9][0-9]*)"|([1-9][0-9]*))(?=\s*[,\]])""")
+    existing = list(vendor_field.finditer(text))
+    if len(vendor_key.findall(text)) != len(existing) or len(existing) > 1:
+        raise ValueError('Expected a single static positive Webasyst Developer ID')
+    if vendor is not None and not re.fullmatch(r'[1-9][0-9]*', vendor):
+        raise ValueError('Expected a positive numeric Webasyst Developer ID')
+    if existing:
+        match = existing[0]
+        declared = next(value for value in match.groups()[1:] if value is not None)
+        if vendor is not None and vendor != declared:
+            raise ValueError('Developer ID does not match the product configuration')
+        text = vendor_field.sub(lambda entry: entry[1] + declared, text, count=1)
+    elif vendor is not None:
+        text = version_field.sub(lambda entry: "'vendor' => " + vendor + ", " + entry[0], text, count=1)
+    else:
+        raise ValueError('Store packaging requires a Webasyst Developer ID in the product config or --vendor')
+    return version_field.sub(lambda entry: entry[1] + entry[2] + f'{version}.{build}' + entry[2],
+                             text, count=1).encode('utf-8')
+
+
+def add_store_root(tar, prefix, epoch):
+    directory = tarfile.TarInfo(prefix.rstrip('/'))
+    directory.type = tarfile.DIRTYPE
+    directory.mode, directory.mtime = 0o755, epoch
+    tar.addfile(directory)
+
+
+def package(repo, output_dir, *, store=False, vendor=None):
     repo = Path(repo).resolve()
     output_dir = Path(output_dir).resolve()
     commit = git(repo, 'rev-parse', '--verify', 'HEAD^{commit}').decode().strip()
@@ -81,6 +114,7 @@ def package(repo, output_dir):
     if dirty:
         raise ValueError('Commit runtime changes before packaging: ' + ', '.join(dirty))
 
+    prefix = 'avito/' if store else ARCHIVE_PREFIX
     files = []
     for entry in git(repo, 'ls-tree', '-rz', '--full-tree', commit).split(b'\0'):
         if not entry:
@@ -100,7 +134,12 @@ def package(repo, output_dir):
     if missing:
         raise ValueError('Missing runtime files: ' + ', '.join(sorted(missing)))
     blobs = {path: git(repo, 'cat-file', 'blob', sha) for path, sha in sorted(files)}
-    version, build = metadata(blobs['lib/config/plugin.php'], blobs['lib/config/build.php'])
+    config = 'lib/config/plugin.php'
+    version, build = metadata(blobs[config], blobs['lib/config/build.php'])
+    if vendor is not None and not store:
+        raise ValueError('--vendor is available only in store packaging')
+    if store:
+        blobs[config] = store_metadata(blobs[config], version, build, vendor)
     epoch = int(git(repo, 'show', '-s', '--format=%ct', commit))
     output_dir.mkdir(parents=True, exist_ok=True)
     filename = f'mps-avito-{version}.{build}.tar.gz'
@@ -114,8 +153,10 @@ def package(repo, output_dir):
             temporary = Path(target.name)
             with gzip.GzipFile(filename='', mode='wb', fileobj=target, mtime=epoch, compresslevel=9) as compressed:
                 with tarfile.open(fileobj=compressed, mode='w|', format=tarfile.USTAR_FORMAT) as tar:
+                    if store:
+                        add_store_root(tar, prefix, epoch)
                     for path, data in blobs.items():
-                        member = tarfile.TarInfo(ARCHIVE_PREFIX + path)
+                        member = tarfile.TarInfo(prefix + path)
                         member.size, member.mtime, member.mode = len(data), epoch, 0o644
                         member.uid = member.gid = 0
                         member.uname = member.gname = ''
@@ -130,9 +171,10 @@ def package(repo, output_dir):
     checksum = output_dir / (filename + '.sha256')
     checksum.write_text(digest + '  ' + filename + '\n')
     manifest = output_dir / (filename + '.manifest.json')
-    manifest.write_text(json.dumps({'application': 'mps', 'plugin': 'avito', 'version': version, 'build': build,
+    manifest.write_text(json.dumps({'application': 'mps', 'plugin': 'avito', 'version': f'{version}.{build}' if store else version, 'build': build,
+                                   'format': 'webasyst-store' if store else 'manual',
                                    'commit': commit, 'archive': filename, 'sha256': digest,
-                                   'prefix': ARCHIVE_PREFIX, 'files': manifest_files},
+                                   'prefix': prefix, 'files': manifest_files},
                                   ensure_ascii=False, indent=2) + '\n')
     return archive, checksum, manifest
 
@@ -140,10 +182,13 @@ def package(repo, output_dir):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repo', type=Path, default=Path(__file__).resolve().parents[1])
-    parser.add_argument('--output-dir', type=Path, default=Path('dist'))
+    parser.add_argument('--output-dir', type=Path)
+    parser.add_argument('--store', action='store_true', help='Build a Webasyst Store submission archive')
+    parser.add_argument('--vendor', help='Webasyst Developer ID for a product without a configured ID')
     args = parser.parse_args()
     try:
-        for artifact in package(args.repo, args.output_dir):
+        for artifact in package(args.repo, args.output_dir or Path('dist/store' if args.store else 'dist'),
+                                store=args.store, vendor=args.vendor):
             print(artifact)
     except (ValueError, OSError, tarfile.TarError) as error:
         parser.exit(1, str(error) + '\n')

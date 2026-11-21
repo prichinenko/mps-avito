@@ -20,4 +20,5 @@ jobs:
           php tests/behavior.php
           python3 tools/build.py check HEAD
           python3 tools/compile-locales.py --check
+          python3 -m unittest discover -s tests -p 'test_store_package.py'
           python3 tools/package.py

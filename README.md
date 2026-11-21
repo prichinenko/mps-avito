@@ -15,3 +15,11 @@
 [Техническое задание](docs/spec.md) · [Каталог API Авито](https://www.avito.ru/developers/api-catalog)
 
 [Промокарточка плагина](img/promo/mps-promo.png)
+
+## Архив для магазина Webasyst
+
+Запустите `python3 tools/package.py --store` из чистого коммита. Архив в
+`dist/store/` содержит одну корневую папку с ID плагина. Внутри архива версия
+состоит из версии исходников и номера `lib/config/build.php`. Если Developer ID
+ещё отсутствует в `plugin.php`, укажите подтверждённый ID через `--vendor ID`.
+Для ручной распаковки в корень Webasyst используется обычная сборка без `--store`.
