@@ -42,3 +42,30 @@ msgstr "Добавить аккаунт"
 
 msgid "Avito account ID"
 msgstr "ID аккаунта Авито"
+
+msgid "Set a positive price in rubles for this SKU"
+msgstr "Укажите положительную цену этого артикула в рублях"
+
+msgid "Awaiting confirmation"
+msgstr "Ожидает подтверждения"
+
+msgid "Ready to ship"
+msgstr "К отправке"
+
+msgid "In transit"
+msgstr "В пути"
+
+msgid "Cancelled"
+msgstr "Отменён"
+
+msgid "Delivered"
+msgstr "Доставлен"
+
+msgid "On return"
+msgstr "На возврате"
+
+msgid "Disputed"
+msgstr "Открыт спор"
+
+msgid "Closed"
+msgstr "Закрыт"

@@ -63,6 +63,74 @@ class mpsAvitoProduct
         return $result + (count($listings) === self::PAGE_SIZE ? ['nextPageToken'=>(string)($page+1)] : ['exit'=>1]);
     }
 
+    public function exportPrice(array $params): array
+    {
+        $export = $this->exportBatch($params,1);
+        $id = array_key_first($export->skus_export);
+        $price = $export->getPricesBySkuId($id,['price']);
+        if (($price['currency_code'] ?? null)!=='RUB' || (int)round((float)($price['price'] ?? 0))<1) {
+            throw new waException(_wd('mps_avito','Set a positive price in rubles for this SKU'),400);
+        }
+        $offer = $this->listingId($export->skus_export[$id]);
+        $reply = $this->operations()->payload((string)$this->auth['company'],
+            '/core/v1/items/'.$offer.'/update_price','POST',['price'=>(int)round((float)$price['price'])]);
+        if (($reply['result']['success'] ?? null)!==true) {
+            throw mpsAvitoApi::invalidResponse();
+        }
+        return ['offers_count'=>1,'interval'=>mpsAvitoRequestQueue::INTERVAL_MS];
+    }
+
+    public function exportStock(array $params): array
+    {
+        $export = $this->exportBatch($params,100,true);
+        $stocks = [];
+        foreach ($export->skus_export as $id=>$sku) {
+            $idAvito = $this->listingId($sku);
+            $data = $export->skus[$id];
+            $quantity = $export->getStock($data,['product_name'=>$export->products[$data['product_id']]['name']]);
+            $stocks[$idAvito] = ['item_id'=>$idAvito,'quantity'=>min(999999,(int)floor($quantity))];
+        }
+        $reply = $this->operations()->payload((string)$this->auth['company'],
+            '/stock-management/1/stocks','PUT',['stocks'=>array_values($stocks)]);
+        $seen = [];
+        foreach (($reply['stocks'] ?? []) as $result) {
+            $id = $result['item_id'] ?? null;
+            if (!mpsAvitoApi::validId($id) || !isset($stocks[$id]) || isset($seen[$id]) || ($result['success'] ?? null)!==true) {
+                throw mpsAvitoApi::invalidResponse();
+            }
+            $seen[$id] = true;
+        }
+        if (count($seen)!==count($stocks)) {
+            throw mpsAvitoApi::invalidResponse();
+        }
+        return ['offers_count'=>count($stocks),'interval'=>mpsAvitoRequestQueue::INTERVAL_MS];
+    }
+
+    private function exportBatch(array $params, int $limit, bool $stock = false): mpsExport
+    {
+        $export = mpsMarketplaceExport::prepare($this->company,$params,$limit,$stock);
+        $links = mpsMarketplaceLinks::requireExactExport($this->company['company_uuid'],$export->skus_export,false);
+        foreach ($export->skus_export as $skuId=>&$sku) {
+            $sku['marketplace_product_id'] = $links[$skuId]['id'];
+        }
+        unset($sku);
+        return $export;
+    }
+
+    private function listingId(array $sku): int
+    {
+        $id = filter_var($sku['marketplace_product_id'] ?? null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+        if ($id === false) {
+            throw new waException(_wd('mps','Resolve the Shop-Script link before exporting'),409);
+        }
+        return $id;
+    }
+
+    protected function operations(): mpsAvitoOperationsApi
+    {
+        return new mpsAvitoOperationsApi((new mpsProfile($this->company['profile_uuid']))->api_auth);
+    }
+
     protected function api(): mpsAvitoApi
     {
         $profile = new mpsProfile($this->company['profile_uuid']);

@@ -165,3 +165,35 @@ foreach (['ИГРУ', '20'] as $term) {
 }
 rejects(fn() => AvitoCategoryFixture::parse('<broken'), 502);
 echo "Avito offline behavior checks passed.\n";
+
+require __DIR__.'/../lib/classes/mpsAvitoOperationsApi.class.php';
+require __DIR__.'/../lib/classes/mpsAvitoOrders.class.php';
+$api = new class([]) extends mpsAvitoOperationsApi {
+    public array $calls = [];
+    public function payload(string $account,string $path,string $method='GET',?array $payload=null): array
+    {
+        $this->calls[] = [$account,$path,$method,$payload];
+        return ['hasMore'=>false,'orders'=>[['id'=>'50000000000000000','marketplaceId'=>'70000000000000001',
+            'createdAt'=>'2026-11-18T00:00:00Z','status'=>'ready_to_ship','delivery'=>['serviceType'=>'pvz'],
+            'items'=>[['avitoId'=>'4131','id'=>'sku-a','count'=>2,'title'=>'Toy','prices'=>['price'=>420]]]]]];
+    }
+};
+$orders = new class(['company'=>'42'],['company_uuid'=>'company','profile_uuid'=>'profile'],$api) extends mpsAvitoOrders {
+    public array $saved = [];
+    public function __construct(array $auth,array $company,private mpsAvitoOperationsApi $fixtureApi)
+    {
+        parent::__construct($auth,$company);
+    }
+    protected function api(): mpsAvitoOperationsApi { return $this->fixtureApi; }
+    protected function save(array $rows,array $items,array $marketplaceIds): void { $this->saved = [$rows,$items,$marketplaceIds]; }
+};
+check($orders->sync([])===['offers_count'=>1,'interval'=>2500,'exit'=>1], 'Avito order paging failed');
+check($orders->saved[0]['50000000000000000']['delivery_model']==='pvz', 'Avito delivery mode was lost');
+check($orders->saved[1]['50000000000000000'][0]['price']==='420.0000', 'Avito item price was lost');
+check($orders->saved[2]['50000000000000000']==='70000000000000001', 'Avito label order ID was lost');
+$from = time()-2*86400;
+$orders->sync(['scheduled_from'=>$from]);
+parse_str(parse_url($api->calls[1][1],PHP_URL_QUERY),$search);
+check($search['dateFrom']===(string)($from-5*86400), 'Avito scheduled orders lost their lookback');
+rejects(fn () => $orders->sync(['page_token'=>'not-a-cursor']),400);
+echo "Avito order paging, item identity and label order ID OK\n";

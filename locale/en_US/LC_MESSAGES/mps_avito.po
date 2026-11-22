@@ -42,3 +42,30 @@ msgstr "Add account"
 
 msgid "Avito account ID"
 msgstr "Avito account ID"
+
+msgid "Set a positive price in rubles for this SKU"
+msgstr "Set a positive price in rubles for this SKU"
+
+msgid "Awaiting confirmation"
+msgstr "Awaiting confirmation"
+
+msgid "Ready to ship"
+msgstr "Ready to ship"
+
+msgid "In transit"
+msgstr "In transit"
+
+msgid "Cancelled"
+msgstr "Cancelled"
+
+msgid "Delivered"
+msgstr "Delivered"
+
+msgid "On return"
+msgstr "On return"
+
+msgid "Disputed"
+msgstr "Disputed"
+
+msgid "Closed"
+msgstr "Closed"

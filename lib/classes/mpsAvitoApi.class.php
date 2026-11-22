@@ -11,6 +11,15 @@ class mpsAvitoApi
         if (!self::validId($accountId)) {
             throw new waException(_wd('mps_avito', 'Enter the Avito account ID in the company settings.'), 400);
         }
+        $query = http_build_query([
+            'page'=>$page, 'per_page'=>$size,
+            'status'=>'active,removed,old,blocked,rejected',
+        ], '', '&', PHP_QUERY_RFC3986);
+        return $this->decode($this->accountRequest($accountId,'/core/v1/items?'.$query));
+    }
+
+    protected function credentials(): array
+    {
         if (!is_string($this->auth['client_id'] ?? null) || trim($this->auth['client_id']) === ''
             || !is_string($this->auth['client_secret'] ?? null) || trim($this->auth['client_secret']) === '') {
             throw new waException(_wd('mps_avito', 'Enter the Avito Client ID and Client Secret in the site settings.'), 400);
@@ -38,19 +47,23 @@ class mpsAvitoApi
             $credentials = ['token'=>$value, 'account'=>(string)$owner, 'expires_at'=>time()+max(0,min($ttl,86400)-60)];
             $cache->set($credentials);
         }
-        if ($credentials['account'] !== $accountId) {
-            throw new waException(_wd('mps_avito', 'The Avito account ID does not match these credentials.'), 403);
-        }
+        return $credentials;
+    }
 
-        $query = http_build_query([
-            'page'=>$page, 'per_page'=>$size,
-            'status'=>'active,removed,old,blocked,rejected',
-        ], '', '&', PHP_QUERY_RFC3986);
-        $response = $this->queue($accountId, fn() => $this->request('/core/v1/items?'.$query, $credentials['token']));
-        if ($response[0] === 401) {
-            $cache->delete();
+    protected function accountRequest(string $id, string $path, string $method = 'GET', ?array $payload = null): array
+    {
+        $credentials = $this->credentials();
+        if ($credentials['account'] !== $id) {
+            throw new waException(_wd('mps_avito','The Avito account ID does not match these credentials.'),403);
         }
-        return $this->decode($response);
+        $body = $payload === null ? null : json_encode($payload,JSON_THROW_ON_ERROR);
+        $reply = $this->queue($id, fn () => $method==='GET'
+            ? $this->request($path,$credentials['token'])
+            : $this->transport($path,$credentials['token'],$method,$body,'application/json'));
+        if ($reply[0]===401) {
+            $this->tokenCache()->delete();
+        }
+        return $reply;
     }
 
     protected function tokenCache(): object
@@ -66,18 +79,24 @@ class mpsAvitoApi
 
     protected function request(string $path, ?string $token, ?array $form = null): array
     {
+        return $this->transport($path,$token,$form===null ? 'GET' : 'POST',
+            $form===null ? null : http_build_query($form,'','&',PHP_QUERY_RFC3986),'application/x-www-form-urlencoded');
+    }
+
+    protected function transport(string $path, ?string $token, string $method, ?string $body, string $type): array
+    {
         $curl = curl_init('https://api.avito.ru'.$path);
         $headers = ['Accept: application/json'];
         $retryAfter = 60;
         if ($token !== null) {
             $headers[] = 'Authorization: Bearer '.$token;
         }
-        if ($form !== null) {
-            $headers[] = 'Content-Type: application/x-www-form-urlencoded';
-            curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($form, '', '&', PHP_QUERY_RFC3986));
+        if ($body !== null) {
+            $headers[] = 'Content-Type: '.$type;
+            curl_setopt($curl,CURLOPT_POSTFIELDS,$body);
         }
         curl_setopt_array($curl, [
-            CURLOPT_HTTPHEADER=>$headers, CURLOPT_RETURNTRANSFER=>true,
+            CURLOPT_HTTPHEADER=>$headers, CURLOPT_RETURNTRANSFER=>true, CURLOPT_CUSTOMREQUEST=>$method,
             CURLOPT_CONNECTTIMEOUT=>5, CURLOPT_TIMEOUT=>20, CURLOPT_FOLLOWLOCATION=>false,
             CURLOPT_HEADERFUNCTION=>static function ($curl, string $line) use (&$retryAfter): int {
                 if (stripos($line, 'Retry-After:') === 0) {
@@ -97,7 +116,7 @@ class mpsAvitoApi
         return [$status, $body, $retryAfter];
     }
 
-    private function decode(array $response): array
+    protected function decode(array $response): array
     {
         [$status, $body, $retryAfter] = $response;
         if ($status === 429) {
