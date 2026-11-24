@@ -1,7 +1,13 @@
 <?php
 
+/**
+ * Validates credentials and discovers seller accounts in Avito.
+ */
 class mpsAvitoConnection extends mpsAvitoApi
 {
+    /**
+     * Resolve check for this operation.
+     */
     public function check(array $scope): array
     {
         $api = !empty($scope['company_uuid']) ? new self((new mpsProfile($scope['profile_uuid']))->api_auth) : $this;

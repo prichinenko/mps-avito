@@ -1,5 +1,7 @@
 <?php
 
+/** Declares the schema installed and removed by Webasyst. */
+
 return [
     'mps_avito_request_limit' => [
         ':options' => ['engine'=>'InnoDB', 'charset'=>'utf8mb4'],

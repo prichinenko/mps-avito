@@ -1,13 +1,22 @@
 <?php
 
+/**
+ * Implements supported shipment operations for Avito.
+ */
 class mpsAvitoShipment extends mpsAvitoApi
 {
+    /**
+     * List shipment operations available for the current order state.
+     */
     public static function shipmentActions(array $order): array
     {
         return $order['delivery_model']==='pvz' && in_array($order['marketplace_status'],['ready_to_ship','in_transit'],true)
             ? ['label'] : [];
     }
 
+    /**
+     * Send the selected shipment operation through the provider API.
+     */
     public function shipment(string $action, array $order, array $company, array $input): array
     {
         $id = (new waModel())->query("SELECT value FROM mps_order_params WHERE mps_order_uuid=s:uuid AND name='avito_marketplace_id'",
@@ -19,6 +28,9 @@ class mpsAvitoShipment extends mpsAvitoApi
         return (new self($auth))->label($company['marketplace_company'],(string)$id,$order['uuid']);
     }
 
+    /**
+     * Resolve label for this operation.
+     */
     protected function label(string $account, string $id, string $uuid): array
     {
         $base = '/order-management/1/orders/labels';

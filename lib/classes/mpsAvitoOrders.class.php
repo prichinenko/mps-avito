@@ -1,16 +1,28 @@
 <?php
 
+/**
+ * Loads order snapshots and related data for Avito.
+ */
 class mpsAvitoOrders
 {
+    /**
+     * Initialize the provider client with the supplied credentials and connection scope.
+     */
     public function __construct(private readonly array $auth, private readonly array $company)
     {
     }
 
+    /**
+     * Resolve the API adapter for this operation.
+     */
     protected function api(): mpsAvitoOperationsApi
     {
         return new mpsAvitoOperationsApi((new mpsProfile($this->company['profile_uuid']))->api_auth);
     }
 
+    /**
+     * Advance the source snapshot synchronization by one step.
+     */
     public function sync(array $params): array
     {
         $cursor = $params['page_token'] ?? '';
@@ -65,6 +77,9 @@ class mpsAvitoOrders
             + ($reply['hasMore'] ? ['nextPageToken'=>$since.':'.($page+1)] : ['exit'=>1]);
     }
 
+    /**
+     * Resolve save for this operation.
+     */
     protected function save(array $rows, array $items, array $marketplaceIds): void
     {
         $model = new waModel();

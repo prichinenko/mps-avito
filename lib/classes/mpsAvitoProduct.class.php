@@ -1,13 +1,22 @@
 <?php
 
+/**
+ * Loads and updates product data through Avito APIs.
+ */
 class mpsAvitoProduct
 {
     private const PAGE_SIZE = 99;
 
+    /**
+     * Initialize the provider client with the supplied credentials and connection scope.
+     */
     public function __construct(private readonly array $auth, private readonly array $company)
     {
     }
 
+    /**
+     * Advance the source snapshot synchronization by one step.
+     */
     public function sync(array $params): array
     {
         $cursor = $params['page_token'] ?? '';
@@ -63,6 +72,9 @@ class mpsAvitoProduct
         return $result + (count($listings) === self::PAGE_SIZE ? ['nextPageToken'=>(string)($page+1)] : ['exit'=>1]);
     }
 
+    /**
+     * Send the selected marketplace prices.
+     */
     public function exportPrice(array $params): array
     {
         $export = $this->exportBatch($params,1);
@@ -80,6 +92,9 @@ class mpsAvitoProduct
         return ['offers_count'=>1,'interval'=>mpsAvitoRequestQueue::INTERVAL_MS];
     }
 
+    /**
+     * Send the selected warehouse quantities to the marketplace.
+     */
     public function exportStock(array $params): array
     {
         $export = $this->exportBatch($params,100,true);
@@ -106,6 +121,9 @@ class mpsAvitoProduct
         return ['offers_count'=>count($stocks),'interval'=>mpsAvitoRequestQueue::INTERVAL_MS];
     }
 
+    /**
+     * Export batch.
+     */
     private function exportBatch(array $params, int $limit, bool $stock = false): mpsExport
     {
         $export = mpsMarketplaceExport::prepare($this->company,$params,$limit,$stock);
@@ -117,6 +135,9 @@ class mpsAvitoProduct
         return $export;
     }
 
+    /**
+     * Resolve listing id for this operation.
+     */
     private function listingId(array $sku): int
     {
         $id = filter_var($sku['marketplace_product_id'] ?? null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
@@ -126,11 +147,17 @@ class mpsAvitoProduct
         return $id;
     }
 
+    /**
+     * Resolve operations for this operation.
+     */
     protected function operations(): mpsAvitoOperationsApi
     {
         return new mpsAvitoOperationsApi((new mpsProfile($this->company['profile_uuid']))->api_auth);
     }
 
+    /**
+     * Resolve the API adapter for this operation.
+     */
     protected function api(): mpsAvitoApi
     {
         $profile = new mpsProfile($this->company['profile_uuid']);

@@ -1,9 +1,15 @@
 <?php
 
+/**
+ * Coordinates authenticated Avito requests and provider rate limits.
+ */
 class mpsAvitoRequestQueue
 {
     public const INTERVAL_MS = 2500;
 
+    /**
+     * Perform the prepared provider API request.
+     */
     public function request(string $accountId, callable $send): array
     {
         $db = new waModel();
@@ -29,6 +35,9 @@ class mpsAvitoRequestQueue
         }
     }
 
+    /**
+     * Reserve for the current scope.
+     */
     private function reserve(waModel $db, string $accountId, int $milliseconds): void
     {
         $db->exec('INSERT INTO mps_avito_request_limit (account_id, ready_at_ms)

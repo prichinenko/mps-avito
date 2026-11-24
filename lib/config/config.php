@@ -1,5 +1,7 @@
 <?php
 
+/** Defines marketplace-specific behavior and fields used by MPS. */
+
 return [
     'marketplace_catalog' => true,
     'source_sync' => true,

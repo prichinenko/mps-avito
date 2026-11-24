@@ -1,5 +1,7 @@
 <?php
 
+/** Declares the plugin identity, capabilities and Webasyst hooks. */
+
 return [
     'name' => 'Авито',
     'vendor' => 1046725,

@@ -1,10 +1,16 @@
 <?php
 
+/**
+ * Loads marketplace categories and their attributes from Avito.
+ */
 class mpsAvitoCategory
 {
     public string $search = '';
     public array $search_result = [];
 
+    /**
+     * Load the stored marketplace category tree.
+     */
     public function getTree(): void
     {
         $term = trim($this->search);
@@ -19,6 +25,9 @@ class mpsAvitoCategory
         }
     }
 
+    /**
+     * Read the category tree and leaf identifiers from the provider.
+     */
     protected function categories(): array
     {
         $cache = new waVarExportCache('avito/catalog-categories', 86400, 'mps');
@@ -43,6 +52,9 @@ class mpsAvitoCategory
         return $categories;
     }
 
+    /**
+     * Parse catalog.
+     */
     protected static function parseCatalog(string $body): array
     {
         $xml = simplexml_load_string($body, SimpleXMLElement::class, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);

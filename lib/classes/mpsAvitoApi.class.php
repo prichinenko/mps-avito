@@ -1,11 +1,20 @@
 <?php
 
+/**
+ * Handles credentials and API requests for Avito.
+ */
 class mpsAvitoApi
 {
+    /**
+     * Initialize the provider client with the supplied credentials and connection scope.
+     */
     public function __construct(private readonly array $auth)
     {
     }
 
+    /**
+     * Resolve listings for this operation.
+     */
     public function listings(string $accountId, int $page, int $size): array
     {
         if (!self::validId($accountId)) {
@@ -18,6 +27,9 @@ class mpsAvitoApi
         return $this->decode($this->accountRequest($accountId,'/core/v1/items?'.$query));
     }
 
+    /**
+     * Resolve credentials for this operation.
+     */
     protected function credentials(): array
     {
         if (!is_string($this->auth['client_id'] ?? null) || trim($this->auth['client_id']) === ''
@@ -50,6 +62,9 @@ class mpsAvitoApi
         return $credentials;
     }
 
+    /**
+     * Resolve account request for this operation.
+     */
     protected function accountRequest(string $id, string $path, string $method = 'GET', ?array $payload = null): array
     {
         $credentials = $this->credentials();
@@ -66,23 +81,35 @@ class mpsAvitoApi
         return $reply;
     }
 
+    /**
+     * Resolve the cache used for an access token.
+     */
     protected function tokenCache(): object
     {
         $key = hash('sha256', json_encode([$this->auth['client_id'], $this->auth['client_secret']], JSON_THROW_ON_ERROR));
         return new waVarExportCache('avito/oauth/'.$key, 86400, 'mps');
     }
 
+    /**
+     * Resolve queue for this operation.
+     */
     protected function queue(string $accountId, callable $send): array
     {
         return (new mpsAvitoRequestQueue())->request($accountId, $send);
     }
 
+    /**
+     * Perform the prepared provider API request.
+     */
     protected function request(string $path, ?string $token, ?array $form = null): array
     {
         return $this->transport($path,$token,$form===null ? 'GET' : 'POST',
             $form===null ? null : http_build_query($form,'','&',PHP_QUERY_RFC3986),'application/x-www-form-urlencoded');
     }
 
+    /**
+     * Resolve transport for this operation.
+     */
     protected function transport(string $path, ?string $token, string $method, ?string $body, string $type): array
     {
         $curl = curl_init('https://api.avito.ru'.$path);
@@ -116,6 +143,9 @@ class mpsAvitoApi
         return [$status, $body, $retryAfter];
     }
 
+    /**
+     * Decode for the current scope.
+     */
     protected function decode(array $response): array
     {
         [$status, $body, $retryAfter] = $response;
@@ -135,11 +165,17 @@ class mpsAvitoApi
         return $data;
     }
 
+    /**
+     * Resolve valid id for this operation.
+     */
     public static function validId(mixed $id): bool
     {
         return (is_int($id) || is_string($id)) && preg_match('/^[1-9][0-9]{0,31}$/D', (string)$id);
     }
 
+    /**
+     * Reject an unexpected provider response.
+     */
     public static function invalidResponse(): waException
     {
         return new waException(_wd('mps_avito', 'Invalid Avito API response.'), 502);
