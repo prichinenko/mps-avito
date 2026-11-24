@@ -1,3 +1,3 @@
 <?php
 
-return 6;
+return 7;
